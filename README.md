@@ -2,14 +2,38 @@
 
 A small library with some nice abstractions for creating fan-out parallel work queues and load testers.
 
-To use this, implement the following interfaces:
-* Producer: push work items onto a WorkQueue
-* Executor: execute the work item
-* ResultHandler: aggregate results and errors
-
 ### Other helpful things:
 * WorkQueue is a minimal interface that can support various queue implementations. A channel based work queue is implemented but it could be extended to support a rate limited queue (maybe a priority queue?)
 * Stop execution outside the librrary by passing in a cancellable context to `ParallelRunner.Run()`.
+
+## Usage
+
+To use this, implement the following interfaces:
+* Producer: Implement `Produce` to push work items onto a WorkQueue
+* Executor: Implement `Do` to execute the work item
+* ResultHandler: Implement `Handle` to aggregate results and errors
+
+Values in the pipeline are passed through as `interface{}`. Client implementations of Executor and ResultHandler must cast these to the correct types.
+
+```
+                                        ┌───────────────┐
+                                        │Executor       │
+                                        ├───────────────┤
+                                  ┌────►│Do(interface{})├───┐
+                                  │     └───────────────┘   │
+┌────────────┐     ┌───────────┐  │                         │
+│ Producer   │     │WorkQueue  │  │     ┌───────────────┐   │   ┌──────────────┐
+├────────────┤     ├───────────┤  │     │Executor       │   │   │ResultHandler │
+│ Produce()  ├────►│ Push()    │  │     ├───────────────┤   │   ├──────────────┤
+└────────────┘     │ Pop()     ├──┼────►│Do(interface{})├───┼──►│Handle()      │
+                   └───────────┘  │     └───────────────┘   │   └──────────────┘
+                                  │                         │
+                                  │     ┌───────────────┐   │
+                                  │     │Executor       │   │
+                                  │     ├───────────────┤   │
+                                  └────►│Do(interface{})├───┘
+                                        └───────────────┘
+```
 
 ## Example
 

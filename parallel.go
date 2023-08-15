@@ -20,20 +20,18 @@ type ResultHandler interface {
 }
 
 type ParallelRunner struct {
-	numWorkers    int
 	producer      Producer
 	workers       []*Worker
 	workQueue     WorkQueue
 	resultHandler ResultHandler
 }
 
-func NewParallelRunner(numWorkers int, producer Producer, executor Executor, resultHandler ResultHandler, workQueue WorkQueue) *ParallelRunner {
-	workers := make([]*Worker, numWorkers)
-	for i := 0; i < numWorkers; i++ {
+func NewParallelRunner(producer Producer, executors []Executor, resultHandler ResultHandler, workQueue WorkQueue) *ParallelRunner {
+	workers := make([]*Worker, len(executors))
+	for i, executor := range executors {
 		workers[i] = NewWorker(executor, workQueue, resultHandler, i+1)
 	}
 	return &ParallelRunner{
-		numWorkers:    numWorkers,
 		producer:      producer,
 		workers:       workers,
 		workQueue:     workQueue,

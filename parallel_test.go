@@ -9,6 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	numWorkers int = 4
+)
+
 type IntProducer struct{}
 
 func (p *IntProducer) Produce(ctx context.Context, workQueue WorkQueue) error {
@@ -47,12 +51,15 @@ func (e *SquareExecutor) Do(ctx context.Context, ifaceVal interface{}) (interfac
 func TestParallel(t *testing.T) {
 	numWorkers := 4
 	producer := &IntProducer{}
-	executor := &SquareExecutor{}
+	executors := make([]Executor, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		executors[i] = &SquareExecutor{}
+	}
 	resultHandler := &IntResultSummer{}
 	workQueue := NewChanWorkQueue(5)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	runner := NewParallelRunner(numWorkers, producer, executor, resultHandler, workQueue)
+	runner := NewParallelRunner(producer, executors, resultHandler, workQueue)
 	err := runner.Run(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 338350, resultHandler.sum)
@@ -79,14 +86,16 @@ func (p *ErrorProducer) Produce(ctx context.Context, workQueue WorkQueue) error 
 }
 
 func TestParallelWithProducerErrors(t *testing.T) {
-	numWorkers := 4
 	producer := &ErrorProducer{maxItems: 10}
-	executor := &SquareExecutor{}
+	executors := make([]Executor, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		executors[i] = &SquareExecutor{}
+	}
 	resultHandler := &IntResultSummer{}
 	workQueue := NewChanWorkQueue(5)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	runner := NewParallelRunner(numWorkers, producer, executor, resultHandler, workQueue)
+	runner := NewParallelRunner(producer, executors, resultHandler, workQueue)
 	err := runner.Run(ctx)
 	assert.Error(t, err)
 	for _, worker := range runner.workers {
@@ -114,7 +123,10 @@ func (s *MaxValSummer) Handle(ctx context.Context, result interface{}, err error
 func TestCancelRunFromResultHandler(t *testing.T) {
 	numWorkers := 4
 	producer := &IntProducer{}
-	executor := &SquareExecutor{}
+	executors := make([]Executor, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		executors[i] = &SquareExecutor{}
+	}
 	workQueue := NewChanWorkQueue(5)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -122,7 +134,7 @@ func TestCancelRunFromResultHandler(t *testing.T) {
 		cancel: cancel,
 		maxVal: 1000,
 	}
-	runner := NewParallelRunner(numWorkers, producer, executor, resultHandler, workQueue)
+	runner := NewParallelRunner(producer, executors, resultHandler, workQueue)
 	err := runner.Run(ctx)
 	assert.Error(t, err)
 	for _, worker := range runner.workers {
