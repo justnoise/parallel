@@ -7,12 +7,6 @@ import (
 	"time"
 )
 
-type WorkQueue interface {
-	Push(context.Context, interface{}) error
-	Pop(context.Context) interface{}
-	Empty() bool
-}
-
 type Executor interface {
 	Do(context.Context, interface{}) (interface{}, error)
 }

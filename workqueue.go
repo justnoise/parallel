@@ -4,6 +4,17 @@ import (
 	"context"
 )
 
+// WorkQueue is a minimal interface that could support a variety of implementations including
+// a simple channel based queue
+// A priority queue
+// A rate limiting queue useful for load testing
+// etc.
+type WorkQueue interface {
+	Push(context.Context, interface{}) error
+	Pop(context.Context) interface{}
+	Empty() bool
+}
+
 type ChanWorkQueue struct {
 	workChan chan interface{}
 	size     int
