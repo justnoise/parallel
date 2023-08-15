@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"sync/atomic"
 )
 
 type Worker struct {
@@ -12,7 +13,7 @@ type Worker struct {
 	resultHandler  ResultHandler
 	workerQuitChan chan bool
 	id             int
-	running        bool // Only used for testing
+	running        atomic.Bool // Only used for testing
 }
 
 func NewWorker(executor Executor, workQueue WorkQueue, resultHandler ResultHandler, id int) *Worker {
@@ -28,8 +29,8 @@ func NewWorker(executor Executor, workQueue WorkQueue, resultHandler ResultHandl
 func (w *Worker) Run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
-	w.running = true
-	defer func() { w.running = false }()
+	w.running.Store(true)
+	defer func() { w.running.Store(false) }()
 	for {
 		select {
 		case <-w.workerQuitChan:

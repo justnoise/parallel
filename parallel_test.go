@@ -56,6 +56,9 @@ func TestParallel(t *testing.T) {
 	err := runner.Run(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 338350, resultHandler.sum)
+	for _, worker := range runner.workers {
+		assert.False(t, worker.running.Load())
+	}
 }
 
 type ErrorProducer struct {
@@ -87,7 +90,7 @@ func TestParallelWithProducerErrors(t *testing.T) {
 	err := runner.Run(ctx)
 	assert.Error(t, err)
 	for _, worker := range runner.workers {
-		assert.False(t, worker.running)
+		assert.False(t, worker.running.Load())
 	}
 }
 
@@ -123,6 +126,6 @@ func TestCancelRunFromResultHandler(t *testing.T) {
 	err := runner.Run(ctx)
 	assert.Error(t, err)
 	for _, worker := range runner.workers {
-		assert.False(t, worker.running)
+		assert.False(t, worker.running.Load())
 	}
 }

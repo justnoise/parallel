@@ -52,7 +52,7 @@ func (r *ParallelRunner) Run(inputCtx context.Context) error {
 	if err != nil {
 		log.Println("Producer error: ", err)
 	} else {
-		// Producer is done. Poll until all workers finish
+		// Producer is done. Wait until the work queue is empty before telling the workers to stop.
 		keepWaiting := true
 		for !r.workQueue.Empty() && keepWaiting {
 			select {
@@ -65,7 +65,10 @@ func (r *ParallelRunner) Run(inputCtx context.Context) error {
 			}
 		}
 	}
-	cancel()
+	r.workQueue.Stop()
+	for _, w := range r.workers {
+		w.Stop()
+	}
 	wg.Wait()
 	return err
 }
