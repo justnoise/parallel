@@ -9,8 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type IntProducer struct {
-}
+type IntProducer struct{}
 
 func (p *IntProducer) Produce(ctx context.Context, workQueue WorkQueue) error {
 	for i := 1; i <= 100; i++ {
@@ -37,8 +36,7 @@ func (s *IntResultSummer) Handle(ctx context.Context, result interface{}, err er
 	s.mu.Unlock()
 }
 
-type SquareExecutor struct {
-}
+type SquareExecutor struct{}
 
 func (e *SquareExecutor) Do(ctx context.Context, ifaceVal interface{}) (interface{}, error) {
 	val := ifaceVal.(int)
@@ -61,6 +59,7 @@ func TestParallel(t *testing.T) {
 }
 
 type ErrorProducer struct {
+	maxItems int
 }
 
 func (p *ErrorProducer) Produce(ctx context.Context, workQueue WorkQueue) error {
@@ -69,7 +68,7 @@ func (p *ErrorProducer) Produce(ctx context.Context, workQueue WorkQueue) error 
 		if err != nil {
 			return err
 		}
-		if i > 10 {
+		if i > p.maxItems {
 			return fmt.Errorf("error")
 		}
 	}
@@ -78,7 +77,7 @@ func (p *ErrorProducer) Produce(ctx context.Context, workQueue WorkQueue) error 
 
 func TestParallelWithProducerErrors(t *testing.T) {
 	numWorkers := 4
-	producer := &ErrorProducer{}
+	producer := &ErrorProducer{maxItems: 10}
 	executor := &SquareExecutor{}
 	resultHandler := &IntResultSummer{}
 	workQueue := NewChanWorkQueue(5)

@@ -11,9 +11,8 @@ type Worker struct {
 	workQueue      WorkQueue
 	resultHandler  ResultHandler
 	workerQuitChan chan bool
-	// used in testing
-	running bool
-	id      int
+	id             int
+	running        bool // Only used for testing
 }
 
 func NewWorker(executor Executor, workQueue WorkQueue, resultHandler ResultHandler, id int) *Worker {
@@ -22,7 +21,6 @@ func NewWorker(executor Executor, workQueue WorkQueue, resultHandler ResultHandl
 		workQueue:      workQueue,
 		resultHandler:  resultHandler,
 		workerQuitChan: make(chan bool),
-		running:        false,
 		id:             id,
 	}
 }
@@ -42,7 +40,6 @@ func (w *Worker) Run(ctx context.Context, wg *sync.WaitGroup) {
 		}
 		work := w.workQueue.Pop(ctx)
 		if work == nil {
-			// TODO: log that we got nil and are shutting down
 			log.Println("Got nil work, shutting down worker", w.id)
 			return
 		}

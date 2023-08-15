@@ -15,8 +15,7 @@ To use this, implement the following interfaces:
 
 ```go
 
-type IntProducer struct {
-}
+type IntProducer struct {}
 
 func (p *IntProducer) Produce(ctx context.Context, workQueue WorkQueue) error {
 	for i := 1; i <= 100; i++ {
@@ -43,8 +42,7 @@ func (s *IntResultSummer) Handle(ctx context.Context, result interface{}, err er
 	s.mu.Unlock()
 }
 
-type SquareExecutor struct {
-}
+type SquareExecutor struct {}
 
 func (e *SquareExecutor) Do(ctx context.Context, ifaceVal interface{}) (interface{}, error) {
 	val := ifaceVal.(int)
