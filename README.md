@@ -9,7 +9,7 @@ To use this, implement the following interfaces:
 
 ### Other helpful things:
 * WorkQueue is a minimal interface that can support various queue implementations. A channel based work queue is implemented but other implementations are possible.
-* Stop execution outside the librrary by passing in a cancellable context in `ParallelRunner.Run()`.
+* Stop execution outside the librrary by passing in a cancellable context to `ParallelRunner.Run()`.
 
 ## Example
 
@@ -65,6 +65,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(resultHandler.sum)
+	fmt.Println(resultHandler.sum)	// Prints 338350
 }
 ```
