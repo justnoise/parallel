@@ -54,10 +54,10 @@ func (r *ParallelRunner) Run(inputCtx context.Context) error {
 	} else {
 		// Producer is done. Wait until the work queue is empty before telling the workers to stop.
 		keepWaiting := true
-		for !r.workQueue.Empty() && keepWaiting {
+		for r.workQueue.Len() > 0 && keepWaiting {
 			select {
 			case <-ctx.Done():
-				log.Println("Context done, not waiting for workers")
+				log.Println("Context done, not waiting for work queue to be empty")
 				keepWaiting = false
 			default:
 				log.Println("Waiting for workers to finish")

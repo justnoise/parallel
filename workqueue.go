@@ -8,11 +8,11 @@ import (
 // WorkQueue is a minimal interface that could support a variety of implementations including
 // a simple channel based queue
 // A rate limiting queue useful for load testing
-// Maybe: A priority queue
+// A priority queue
 type WorkQueue interface {
 	Push(context.Context, interface{}) error
 	Pop(context.Context) interface{}
-	Empty() bool
+	Len() int
 	// Stop is needed to ensure workers don't get stuck waiting for work
 	// when there is no more work to be done
 	Stop()
@@ -54,15 +54,15 @@ func (q *ChanWorkQueue) Pop(ctx context.Context) interface{} {
 	}
 }
 
-func (q *ChanWorkQueue) Empty() bool {
-	return len(q.workChan) == 0
+func (q *ChanWorkQueue) Len() int {
+	return len(q.workChan)
 }
 
 func (q *ChanWorkQueue) Stop() {
 	close(q.quit)
 }
 
-// TODO: Needs untested
+// TODO: Untested
 type RateLimitingWorkQueue struct {
 	producerChan chan interface{}
 	workerChan   chan interface{}
@@ -123,8 +123,8 @@ func (q *RateLimitingWorkQueue) Pop(ctx context.Context) interface{} {
 	}
 }
 
-func (q *RateLimitingWorkQueue) Empty() bool {
-	return len(q.producerChan) == 0
+func (q *RateLimitingWorkQueue) Len() int {
+	return len(q.producerChan)
 }
 
 func (q *RateLimitingWorkQueue) Stop() {
