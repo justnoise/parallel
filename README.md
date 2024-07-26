@@ -3,7 +3,7 @@
 A small library with some nice abstractions for creating fan-out parallel work queues and load testers.
 
 ### Other helpful things:
-* WorkQueue is a minimal interface that can support various queue implementations. A channel based work queue is implemented but it could be extended to support a rate limited queue (maybe a priority queue?)
+* WorkQueue is a minimal interface that can support various queue implementations. A channel based work queue and rate limited queue are implemented but it could be extended to support a priority queue as well.
 * Stop execution outside the librrary by passing in a cancellable context to `ParallelRunner.Run()`.
 
 ## Usage
@@ -77,12 +77,15 @@ func (e *SquareExecutor) Do(ctx context.Context, ifaceVal interface{}) (interfac
 func main() {
 	numWorkers := 4
 	producer := &IntProducer{}
-	executor := &SquareExecutor{}
+	executors := make([]Executor, numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		executors[i] = &SquareExecutor{}
+	}
 	resultHandler := &IntResultSummer{}
 	workQueue := NewChanWorkQueue(5)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	runner := NewParallelRunner(numWorkers, producer, executor, resultHandler, workQueue)
+	runner := NewParallelRunner(producer, executors, resultHandler, workQueue)
 	err := runner.Run(ctx)
 	if err != nil {
 		panic(err)

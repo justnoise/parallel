@@ -62,10 +62,10 @@ func (q *ChanWorkQueue) Stop() {
 	close(q.quit)
 }
 
-// TODO: Untested
 type RateLimitingWorkQueue struct {
 	producerChan chan interface{}
 	workerChan   chan interface{}
+	size         int
 	quit         chan bool
 }
 
@@ -73,26 +73,58 @@ func NewRateLimitingWorkQueue(ctx context.Context, size int, interval time.Durat
 	wq := &RateLimitingWorkQueue{
 		producerChan: make(chan interface{}, size),
 		workerChan:   make(chan interface{}),
+		size:         size,
 		quit:         make(chan bool),
 	}
 	go wq.run(ctx, interval)
 	return wq
 }
 
+// Tickers don't produce a perfect rate, especially at high frequency and under
+// load. This function attempts to calculate the number of items we should have
+// sent sent the last tick and accumulate a debt of items sent. It's not perfect
+// but it gets us close to sending the right number of items in a given
+// interval.
 func (q *RateLimitingWorkQueue) run(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	debt := time.Duration(0)
 	for {
+		lastSend := time.Now()
 		select {
 		case <-ctx.Done():
 			return
+		case <-q.quit:
+			return
 		case <-ticker.C:
-			select {
-			case <-ctx.Done():
-				return
-			case val := <-q.producerChan:
+			start := time.Now()
+			// Don't accumulate debt if there's no work to do. Producer chan is
+			// usually empty at the start of a test.
+			if len(q.producerChan) == 0 {
+				continue
+			}
+			debt += time.Since(lastSend)
+			neededSends := int(debt / interval)
+			remainder := debt % interval
+			possibleSends := len(q.producerChan)
+			// Put a limit on number of items we can send to workers at once
+			freeBuffer := q.size - len(q.workerChan)
+			if possibleSends > freeBuffer {
+				possibleSends = freeBuffer
+			}
+			sends := neededSends
+			debt = remainder
+			if neededSends > possibleSends {
+				sends = possibleSends
+				debt += time.Duration(neededSends-possibleSends) * interval
+			}
+			lastSend = start
+			for i := 0; i < sends; i++ {
+				val := <-q.producerChan
 				select {
 				case <-ctx.Done():
+					return
+				case <-q.quit:
 					return
 				case q.workerChan <- val:
 				}
