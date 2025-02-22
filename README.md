@@ -1,6 +1,6 @@
 # parallel
 
-A small library with some nice abstractions for creating fan-out parallel work queues and load testers.
+A library with some nice abstractions for creating fan-out parallel work queues and load testers.
 
 ### Other helpful things:
 * WorkQueue is a minimal interface that can support various queue implementations. A channel based work queue and rate limited queue are implemented but it could be extended to support a priority queue as well.
